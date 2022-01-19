@@ -1,0 +1,630 @@
+﻿@page "{SalesID?}/{RefundID?}/{ReturnID?}"
+@model WebApp.Pages.Sales.SalesReturnsModel
+@{
+    ViewBag.Title = "Sales & Returns";
+    var ToRefund = Model.RefundSalesSummary;
+    var SaleSummary = Model.CurrentSaleSummary;
+}
+
+<style>
+    .hidden {
+        display: none;
+    }
+
+    .money-table span {
+        margin-right: 3rem;
+    }
+
+    .money-table div {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .acct-summary {
+        margin-left: auto;
+        margin-right: 0;
+        width: 40%;
+        min-width: max-content;
+    }
+
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    input[type=number] {
+        -moz-appearance: textfield;
+    }
+
+    [type="radio"][id]:disabled {
+        opacity: 1;
+    }
+
+    fieldset > div {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    table {
+        width: 100%;
+    }
+
+    select, label {
+        width: 50%;
+        display: inline-block;
+    }
+
+    input[type=number]:first-of-type + input {
+        width: 25%;
+        display: inline;
+    }
+</style>
+
+<h1>SALES & RETURNS</h1>
+<button id="view" onclick="changeView()">Switch  View &harr;</button>
+<p>
+    <span style="display: block; font-size: 2rem;">Welcome, @(Model.EmployeeName)!</span>
+    <span class="sales">You're viewing <span style="font-size: 2rem;color: #702222;">SALES</span></span>
+    <span class="returns hidden">You're viewing <span style="font-size: 2rem; color: #702222;">RETURNS</span></span>
+</p>
+
+@if (Model.FindSaleMessage is not null)
+{
+    <blockquote>@Model.FindSaleMessage</blockquote>
+}
+
+<div class="sales">
+    <h2>Sales</h2>
+
+    @if (Model.SalesID is null || Model.SalesID == 0)
+    {
+        <form method="post" asp-page-handler="GetCategory">
+            @* TO FILTER BY CATEGORY *@
+            <input type="hidden" name="EmployeeID" value="@Model.EmployeeID" />
+            <label for="CategoriesID">Filter by Category:</label>
+            <select class="category" name="CategoriesID" onchange="this.form.submit()">
+                <option value="" select>[Choose a category]</option>
+                @foreach (var cat in Model.Categories)
+                {
+                    if (@cat.CategoryID == Model.CategoriesID)
+                    {
+                        <option value="@cat.CategoryID" selected>@cat.Description</option>
+                    }
+                    else
+                    {
+                        <option value="@cat.CategoryID">@cat.Description</option>
+                    }
+                }
+            </select>
+
+            @* PARTS PURCHASE *@
+            <label for="ToPurchasePart.PartID">Parts:</label>
+            <select name="ToPurchasePart.PartID" style="display: block;">
+                <option value="">[Pick a part]</option>
+                @foreach (var prt in Model.Parts)
+                {
+                    if (prt.CategoryID == Model.CategoriesID && !prt.Discontinued)
+                    {
+                        <option value="@prt.PartID">@prt.Description</option>
+                    }
+                    else if (Model.CategoriesID is null && !prt.Discontinued)
+                    {
+                        <option value="@prt.PartID">@prt.Description</option>
+                    }
+                }
+            </select>
+            <div>
+                <label style="width: 25%;">Amount:</label>
+                <input type="number" style="width: 12.5%; display: inline;" name="ToPurchasePart.Quantity" min="1" value="1" />
+                <input style="width: 12.5%;" type="submit" value="Add to Cart" asp-page-handler="AddItem" />
+            </div>
+
+
+            @if (!string.IsNullOrEmpty(Model.ItemFeedback))
+            {
+                <blockquote>@Model.ItemFeedback</blockquote>
+            }
+
+            @if ((Model.ToPurchasePart is not null && Model.ToPurchasePart.PartID > 0) || Model.PartsList.Count > 0)
+            {
+                <table style="text-align: center; width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Qty.</th>
+                            <th>Price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.PartsList)
+                        {
+                            <tr>
+                                <td style="width: 30%;">
+                                    @item.Description
+                                    <input type="hidden" name="PartsList.Index"
+                                           value="@item.PartID" />
+                                    <input type="hidden" name="PartsList[@item.PartID].PartID"
+                                           value="@item.PartID" />
+                                    <input type="hidden" name="PartsList[@item.PartID].Description"
+                                           value="@item.Description" />
+                                </td>
+                                <td style="display: flex;">
+                                    <button type="submit" asp-page-handler="RemoveItem"
+                                            value="@item.PartID" name="SalesFocusPart">
+                                        X
+                                    </button>
+                                    <input type="number" value="@item.Quantity" min="1"
+                                           id="@("salesQuantity" +item.PartID.ToString() )"
+                                           name="PartsList[@item.PartID].Quantity" />
+
+                                    <button asp-page-handler="SalesUpdateQuantity"
+                                            value="@item.PartID">
+                                        ↺
+                                    </button>
+                                    <input type="hidden" name="PartsList[@item.PartID].Quantity"
+                                           value="@item.Quantity" />
+                                </td>
+                                <td style="width: 20%;">
+                                    @item.SellingPrice.ToString("$#0.00")
+                                    <input type="hidden" name="PartsList[@item.PartID].SellingPrice"
+                                           value="@item.SellingPrice" />
+                                </td>
+                                <td style="width: 20%;">
+                                    @((item.Quantity * item.SellingPrice).ToString("$#0.00"))
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                <div class="acct-summary">
+                    <div class="money-table">
+                        <div>
+                            <span>Subtotal&#09;</span>
+                            <span>
+                                @SaleSummary.SubTotal.ToString("$#0.00")
+                            </span>
+                        </div>
+                        <div>
+                            <span>Tax</span>
+                            <span>
+                                @SaleSummary.TaxAmount.ToString("$#0.00")
+                            </span>
+                        </div>
+                        <div>
+                            <span>Coupon%</span>
+                            @if (Model.CouponCode is not null)
+                            {
+                                <span>
+                                    @((Model.Coupon.CouponDiscount / 100m).ToString("#0% off"))
+                                </span>
+                            }
+                            else
+                            {
+                                <span>0%</span>
+                            }
+                        </div>
+                        <div>
+                            <span>Discount</span>
+                            @{
+                                decimal discount;
+                                if (Model.CouponCode is not null)
+                                {
+                                    discount = Model.Coupon.CouponDiscount / 100m * SaleSummary.SubTotal;
+                                }
+                                else
+                                {
+                                    discount = 0;
+                                }
+                            }
+                            <span>@discount.ToString("$#0.00")</span>
+
+                        </div>
+                        <div>
+                            <span>Total</span>
+                            <span>
+                                @((SaleSummary.SubTotal + SaleSummary.TaxAmount
+                                        - discount).ToString("$#0.00"))
+                            </span>
+                        </div>
+                    </div>
+                    <div>
+                        <label>Coupon: </label>
+                        <input type="text" asp-for="CouponCode" />
+                        @if (Model.CouponMessage is not null)
+                        {
+                            <blockquote>@Model.CouponMessage</blockquote>
+                        }
+                        <input type="hidden" name="Coupon.CouponID" value="@Model.Coupon.CouponID">
+                        <input type="hidden" name="Coupon.CouponIDValue" value="@Model.Coupon.CouponIDValue">
+                        <input type="hidden" name="Coupon.CouponDiscount" value="@Model.Coupon.CouponDiscount">
+
+                        <input type="submit" value="Verify Coupon" asp-page-handler="GetCoupon" />
+                    </div>
+                    <fieldset>
+                        <legend>Pay by:</legend>
+                        <div>
+                            <div>
+                                <input type="radio" asp-for="CurrentSaleSummary.PaymentType" id="cash" value="M" />
+                                <label for="cash">Cash</label>
+                            </div>
+                            <div>
+                                <input type="radio" asp-for="CurrentSaleSummary.PaymentType" id="credit" value="C" />
+                                <label for="credit">Credit</label>
+                            </div>
+                            <div>
+                                <input type="radio" asp-for="CurrentSaleSummary.PaymentType" id="debit" value="D" />
+                                <label for="debit">Debit</label>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    @if (Model.CanPay)
+                    {
+                        <input type="submit" value="Pay Now" asp-page-handler="PayNow" />
+                    }
+                    else
+                    {
+                        <input type="submit" value="Checkout" asp-page-handler="CheckOut" />
+                    }
+                    <input type="submit" value="Clear Cart" asp-page-handler="Clear"
+                           onclick="confirm('This will clear sales and refund forms. Click OK to confirm.')" />
+                    <p>Sales Invoice # </p>
+
+                </div>
+
+                @if (Model.CheckoutMessage is not null)
+                {<blockquote>@Model.CheckoutMessage</blockquote>}
+
+            }
+        </form>
+    }
+    else
+    {
+        <form method="post" asp-page-handler="Clear">
+            <table style="text-align: center; width: 100%;">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Qty.</th>
+                        <th>Price</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in SaleSummary.PartsList)
+                    {
+                        <tr>
+                            <td style="width: 30%;">
+                                @item.Description
+                            </td>
+                            <td style="width: 30%;">
+                                @item.Quantity"
+                            </td>
+                            <td style="width: 20%;">
+                                @item.SellingPrice.ToString("$#0.00")
+                            </td>
+                            <td style="width: 20%;">
+                                @((item.Quantity * item.SellingPrice).ToString("$#0.00"))
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="acct-summary">
+                <div class="money-table">
+                    <div>
+                        <span>Subtotal&#09;</span>
+                        <span>
+                            @SaleSummary.SubTotal.ToString("$#0.00")
+                        </span>
+                    </div>
+                    <div>
+                        <span>Tax</span>
+                        <span>
+                            @SaleSummary.TaxAmount.ToString("$#0.00")
+                        </span>
+                    </div>
+                    <div>
+                        <span>Coupon%</span>
+                        @if (SaleSummary.Coupon is not null)
+                        {
+                            <span>
+                                @((SaleSummary.Coupon.CouponDiscount / 100m).ToString("#0% off"))
+                            </span>
+                        }
+                        else
+                        {
+                            <span>0%</span>
+                        }
+                    </div>
+                    <div>
+                        <span>Discount</span>
+                        @{
+                            decimal discount;
+                            if (SaleSummary.Coupon is not null)
+                            {
+                                discount = SaleSummary.Coupon.CouponDiscount / 100m * SaleSummary.SubTotal;
+                            }
+                            else
+                            {
+                                discount = 0;
+                            }
+                        }
+                        <span>@discount.ToString("$#0.00")</span>
+
+                    </div>
+                    <div>
+                        <span>Total</span>
+                        <span>
+                            @((SaleSummary.SubTotal + SaleSummary.TaxAmount
+                                            - discount).ToString("$#0.00"))
+                        </span>
+                    </div>
+                </div>
+                <div>
+                    <label>Coupon: </label>
+                    <span>@(SaleSummary.Coupon is null ? "" : SaleSummary.Coupon.CouponIDValue)</span>
+                </div>
+                <fieldset>
+                    <legend>Pay by:</legend>
+                    <div>
+                        <div>
+                            <input type="radio" asp-for="CurrentSaleSummary.PaymentType" id="cash" value="M" disabled />
+                            <label for="cash">Cash</label>
+                        </div>
+                        <div>
+                            <input type="radio" asp-for="CurrentSaleSummary.PaymentType" id="credit" value="C" disabled />
+                            <label for="credit">Credit</label>
+                        </div>
+                        <div>
+                            <input type="radio" asp-for="CurrentSaleSummary.PaymentType" id="debit" value="D" disabled />
+                            <label for="debit">Debit</label>
+                        </div>
+                    </div>
+                </fieldset>
+
+
+                <input type="submit" value="Clear Cart" asp-page-handler="Clear"
+                       onclick="confirm('This will clear sales and refund forms. Click OK to confirm.')" />
+                <p>Sales Invoice # @SaleSummary.SaleID</p>
+
+            </div>
+        </form>
+    }
+
+
+
+
+</div>
+
+<div class="returns hidden">
+    <input type="hidden" name="EmployeeID" value="@Model.EmployeeID" />
+    <h2>Returns</h2>
+
+    <form method="get">
+        @if (Model.RefundID is not null)
+        {
+            <p>Sales Invoice# @Model.ReturnDisplay.SaleID</p>
+        }
+        else
+        {
+
+            <label for="">Sales Invoice# 	&#09;</label>
+            <input type="number" placeholder="###" asp-for="ReturnID"
+                   style="width: 50%; display: inline-block;" required />
+            <input type="submit" asp-route-ReturnID="@Model.ReturnID" value="Lookup Sale" />
+        }
+    </form>
+    <form method="post">
+        <input type="submit" value="Clear" asp-page-handler="Clear"
+               onclick="confirm('This will clear sales and refund forms. Click OK to confirm.')" />
+    </form>
+        
+    
+
+    @if (Model.RefundMessage is not null)
+    {
+        <blockquote>@Model.RefundMessage</blockquote>
+    }
+    @if (Model.RefundID is not null && Model.ReturnDisplay is not null)
+    {
+<table>
+    <thead>
+        <tr>
+            <th>Item</th>
+            <th>Orginal Qty.</th>
+            <th>Price</th>
+            <th>Return Qty.</th>
+            <th>Ref?</th>
+            <th>Qty.</th>
+            <th>Reason</th>
+        </tr>
+    </thead>
+
+    <tbody style="text-align: center;">
+        @foreach (var part in ToRefund.PartsList)
+        {
+            <tr>
+                <td style="text-align: left;">
+                    @part.Description
+                </td>
+                <td>
+                    @part.Quantity
+                </td>
+                <td>@part.SellingPrice.ToString("$#0.00")</td>
+                <td>
+                    @part.RefundQuantity
+                </td>
+                <td><input type="checkbox" asp-for="@part.Refundable" disabled /></td>
+                <td style="width: 3rem;">
+                    @if (Model.ReturnDisplay.PartsReturned.Where(x => x.PartID == part.PartID).Any())
+                    {
+                        <p>@Model.ReturnDisplay.PartsReturned.Where(x => x.PartID == part.PartID).FirstOrDefault().ToRefund</p>
+                    }
+                </td>
+                <td style="width: 10rem;">
+                    @if (Model.ReturnDisplay.PartsReturned.Where(x => x.PartID == part.PartID).Any())
+                    {
+                        <p>@Model.ReturnDisplay.PartsReturned.Where(x => x.PartID == part.PartID).FirstOrDefault().RefundReason</p>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+            <div class="acct-summary">
+                <div class="money-table">
+                    <div>
+                        <span>Subtotal&#09;</span>
+                        <span>@Model.ReturnDisplay.SubTotal.ToString("$#0.00")</span>
+                    </div>
+                    <div>
+                        <span>Tax</span>
+                        <span>@Model.ReturnDisplay.TaxAmount.ToString("$#0.00")</span>
+                    </div>
+                    <div>
+                        <span>Coupon%</span>
+                        <span>
+                            @(Model.ReturnDisplay.OriginalCoupon is not null
+                            ? Model.ReturnDisplay.OriginalCoupon.CouponDiscount : 0)%
+                        </span>
+                    </div>
+                    <div>
+                        <span>Discount</span>
+                        <span>
+                            @(((Model.ReturnDisplay.OriginalCoupon is not null
+                            ? Model.ReturnDisplay.OriginalCoupon.CouponDiscount
+                            / 100m * Model.ReturnDisplay.SubTotal
+                            : 0)).ToString("$#0.00"))
+                        </span>
+                    </div>
+                    <div>
+                        <span>Total</span>
+                        <span>
+                            @((Model.ReturnDisplay.SubTotal + Model.ReturnDisplay.TaxAmount
+                            - (Model.ReturnDisplay.OriginalCoupon is not null
+                            ? Model.ReturnDisplay.OriginalCoupon.CouponDiscount
+                                / 100m * Model.ReturnDisplay.SubTotal
+                            : 0)).ToString("$#0.00"))
+                        </span>
+                    </div>
+                </div>
+                <p>Refund ID # @Model.ReturnDisplay.SaleRefundID</p>
+            </div>
+
+    }
+    else if (Model.RefundSalesSummary is not null)
+    {
+<form method="post">
+    <input type="hidden" name="ReturnID" value="@Model.ReturnID" />
+    <input type="hidden" name="EmployeeID" value="@Model.EmployeeID" />
+    <table>
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Orginal Qty.</th>
+                <th>Price</th>
+                <th>Return Qty.</th>
+                <th>Ref?</th>
+                <th>Qty.</th>
+                <th>Reason</th>
+            </tr>
+        </thead>
+
+        <tbody style="text-align: center;">
+            @foreach (var part in ToRefund.PartsList)
+            {
+                <tr>
+                    <td style="text-align: left;">
+                        @part.Description
+                        <input type="hidden" name="RefundPartsList.Index" value="@part.PartID">
+                        <input type="hidden" name="RefundPartsList[@part.PartID].PartID"
+                               value="@part.PartID" />
+                    </td>
+                    <td>
+                        @part.Quantity
+                        <input type="hidden" name="RefundPartsList[@part.PartID].Quantity"
+                               value="@part.Quantity" />
+                    </td>
+                    <td>@part.SellingPrice.ToString("$#0.00")</td>
+                    <td>
+                        @part.RefundQuantity
+                        <input type="hidden" name="RefundPartsList[@part.PartID].RefundQuantity"
+                               value="@part.RefundQuantity" />
+                    </td>
+                    <td><input type="checkbox" asp-for="@part.Refundable" disabled /></td>
+                    <td style="width: 3rem;">
+                        <input type="number" min="1" name="RefundPartsList[@part.PartID].ToRefund" />
+                    </td>
+                    <td style="width: 10rem;">
+                        <input type="text" name="RefundPartsList[@part.PartID].RefundReason" />
+                    </td>
+                </tr>
+            }
+        </tbody>
+
+    </table>
+    <div class="acct-summary">
+        <div class="money-table">
+            <div>
+                <span>Subtotal&#09;</span>
+                <span>$0.00</span>
+            </div>
+            <div>
+                <span>Tax</span>
+                <span>$0.00</span>
+            </div>
+            <div>
+                <span>Coupon%</span>
+                <span>
+                    @(Model.Coupon is not null
+                            ? Model.Coupon.CouponDiscount : 0)%
+                </span>
+            </div>
+            <div>
+                <span>Discount</span>
+                <span>$0.00</span>
+            </div>
+            <div>
+                <span>Total</span>
+                <span>$0.00</span>
+            </div>
+        </div>
+        <input type="submit" value="Refund" asp-page-handler="Refund" />
+        <p>Refund ID # </p>
+    </div>
+
+
+</form>
+    }
+
+
+</div>
+
+<script>
+    if (window.location.href.indexOf("ReturnID") > -1
+        || window.location.href.indexOf("Refund") > -1) {
+        changeView();
+    };
+    const temporaryArr = window.location.href.split("/");
+    if (temporaryArr.indexOf('SalesReturns') + 3 < temporaryArr.length
+        && window.location.href.indexOf("Category") < 0) {
+        changeView();
+    }
+
+    function changeView() {
+        let sales = document.querySelectorAll('.sales');
+        let returns = document.querySelectorAll('.returns');
+        toggleHide(sales);
+        toggleHide(returns);
+    }
+    function toggleHide(list) {
+        list.forEach((item) => { item.classList.toggle('hidden'); });
+    }
+    function update(elem) {
+        elem.nextSibling.value = elem.previousSibling.value;
+    }
+
+</script>

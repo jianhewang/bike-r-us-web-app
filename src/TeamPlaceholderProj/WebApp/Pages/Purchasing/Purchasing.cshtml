@@ -1,0 +1,322 @@
+﻿@page "{SelectedVendor?}"
+@model WebApp.Pages.Admin.PurchasingModel
+@{
+}
+
+<h1>Purchasing</h1>
+
+@section CustomCSS{
+    <style>
+        :root {
+            --info-color: #0dcbd7;
+            --default-color: #d4c7c7;
+            --cancel-color: #808080;
+            --icon-color: transparent;
+        }
+        .vendor-form {
+            display: flex;
+            align-items: center;
+        }
+        .vendor-info {
+            display: flex;
+            margin-left: auto;
+        }
+        .vendor-form-dropdown {
+            width: auto;
+            flex-basis: 30%;
+            margin-right: 1rem;
+        }
+        .button-group{
+            margin: 2rem 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        .button-base{
+            width: 124px;
+        }
+        .margin-right {
+            margin-right: .5rem;
+        }
+        .purchase-td-align-end {
+            text-align: end;
+        }
+        .order-summary{
+            display: flex;
+            font-size: 1.25rem;
+        }
+        .order-summary > *{
+            margin-right: 3rem;
+        }
+        .empty-order-text{
+            padding-left: 1rem;
+            color: #808080;
+        }
+        .vendor-list{
+            margin-top: 2rem;
+        }
+    </style>
+}
+
+@if (!string.IsNullOrEmpty(Model.SuccessMessage))
+{
+    <blockquote class="success">@Model.SuccessMessage</blockquote>
+}
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <blockquote class="error">
+        @Model.ErrorMessage
+        <ul>
+            @foreach (var detail in Model.ErrorDetails)
+            {
+                <li>@detail</li>
+            }
+        </ul>
+    </blockquote>
+}
+
+<form method="post" class="vendor-form" asp-page-handler="Find">
+
+    <select class="vendor-form-dropdown" asp-for="SelectedVendor">
+        <option value="0">[-Select a Vendor-]</option>
+        @foreach (var vendor in Model.AllVendors)
+        {
+            <option value="@vendor.VendorID">@vendor.VendorName</option>
+        }
+    </select>
+
+    <div>
+        <button id="button-find" type="submit" style="background-color: cornflowerblue;width: 70px;">Find</button>
+    </div>
+
+    @if (Model.SelectedVendor > 0)
+    {
+        <div class="vendor-info">
+            <p class="margin-right"><b>Phone:</b> @Model.PurchaseOrderSummary.Phone</p>
+            <p class="margin-right"><b>City:</b> @Model.PurchaseOrderSummary.City</p>
+            <p><b>Order #:</b> @(Model.PurchaseOrderSummary.PurchaseOrderNumber > 0 ? Model.PurchaseOrderSummary.PurchaseOrderNumber : "New Order")</p>
+        </div>
+     }
+</form>
+
+@if (Model.SelectedVendor > 0)
+{
+    <form method="post">
+        <input type="hidden" asp-for="EmployeeID" />
+        <div class="button-group">
+            @if (Model.PurchaseOrderSummary.PurchaseOrderNumber > 0)
+            {
+                <button type="submit" 
+                        class="button-base"
+                        style="background-color:var(--success-color)"
+                        asp-page-handler="Save">
+                    Save Order
+                </button>
+                <button type="submit"
+                        class="button-base"
+                        style="background-color:var(--info-color)"
+                        onclick="return confirm('Press OK will place the current active order and can no longer make any changes.')"
+                        asp-page-handler="Place">
+                    Place Order
+                </button>
+                <button type="submit"
+                        class="button-base"
+                        style="background-color:var(--danger-color)"
+                        onclick="return confirm('Press OK will delete the current active order permanently.')"
+                        asp-page-handler="Delete">
+                    Delete Order
+                </button>
+                <button type="submit"
+                        class="button-base"
+                        style="background-color:var(--cancel-color)"
+                        onclick="return confirm('Press OK will clear all unsaved changes and reset the entire page.')"
+                        asp-page-handler="Clear">
+                    Clear
+                </button>
+            }
+            else
+            {
+                <button type="submit" 
+                        class="button-base"
+                        style="background-color:var(--success-color)"
+                        asp-page-handler="New">
+                    New Order
+                </button>
+                <button type="submit"
+                        class="button-base"
+                        style="background-color:var(--info-color)"
+                        onclick="return confirm('Press OK will place the current active order and can no longer make any changes.')"
+                        asp-page-handler="Place">
+                    Place Order
+                </button>
+                <button type="submit"
+                        class="button-base"
+                        style="background-color:var(--danger-color)"
+                        onclick="return confirm('Press OK will delete the current active order permanently.')"
+                        asp-page-handler="Delete" disabled>
+                    Delete Order
+                </button>
+                <button type="submit"
+                        class="button-base"
+                        style="background-color:var(--cancel-color)"
+                        onclick="return confirm('Press OK will clear all unsaved changes and reset the entire page.')"
+                        asp-page-handler="Clear">
+                    Clear
+                </button>
+            }
+
+
+        </div>
+        <div class="order-summary">
+            <p>Subtotal: @(Model.Subtotal.HasValue ? Model.Subtotal.Value.ToString("$#0.00") : Model.PurchaseOrderSummary.SubTotal.ToString("$#0.00"))</p>
+            <p>GST: @(Model.GST.HasValue ? Model.GST.Value.ToString("$#0.00") : Model.PurchaseOrderSummary.TaxAmount.ToString("$#0.00"))</p>
+            <p>Total: @(Model.Total.HasValue ? Model.Total.Value.ToString("$#0.00") : (@Model.PurchaseOrderSummary.SubTotal + @Model.PurchaseOrderSummary.TaxAmount).ToString("$#0.00")) </p>
+        </div>
+        <div>
+            <h2>Order Details</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <td>Delete</td>
+                        <td>ID</td>
+                        <td>Description</td>
+                        <td class="purchase-td-align-end">Qty On Hand</td>
+                        <td class="purchase-td-align-end">Reorder Level</td>
+                        <td class="purchase-td-align-end">Qty On Order</td>
+                        <td class="purchase-td-align-end">Qty To Order</td>
+                        <td class="purchase-td-align-end">Price ($)</td>
+                        <td>Refresh</td>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.OrderDetailList)
+                    {
+                        var part = Model.OrderedParts.SingleOrDefault(x => x.PartID == item.ID);
+                        var qtyToOrder = part != null ? part.QtyToOrder : item.QtyToOrder;
+                        var price = part != null ? part.PurchasePrice : item.PurchasePrice;
+                        <tr>
+                            <td>
+                                <input type="hidden" name="OrderDetailList.Index" value="@item.ID" />
+                                <button type="submit"
+                                        name="SelectedPartID"
+                                        value="@item.ID"
+                                        style="background-color:var(--icon-color)"
+                                        asp-page-handler="DeleteItem">
+                                    <img src="https://img.icons8.com/material-outlined/24/000000/delete-trash.png" />
+                                </button>
+                            </td>
+                            <td>
+
+                                <input type="hidden" name="OrderDetailList[@item.ID].ID" value="@item.ID" />
+                                @item.ID
+                            </td>
+                            <td>
+                                <input type="hidden" name="OrderDetailList[@item.ID].Description" value="@item.Description" />
+                                @item.Description
+                            </td>
+                            <td class="purchase-td-align-end">
+                                <input type="hidden" name="OrderDetailList[@item.ID].QtyOnHand" value="@item.QtyOnHand" />
+                                @item.QtyOnHand
+                            </td>
+                            <td class="purchase-td-align-end">
+                                <input type="hidden" name="OrderDetailList[@item.ID].ReorderLevel" value="@item.ReorderLevel" />
+                                @item.ReorderLevel
+                            </td>
+                            <td class="purchase-td-align-end">
+                                <input type="hidden" name="OrderDetailList[@item.ID].QtyOnOrder" value="@item.QtyOnOrder" />
+                                @item.QtyOnOrder
+                            </td>
+                            <td>
+                                <input type="hidden" name="OrderedParts.Index" value="@item.ID" />
+                                <input type="hidden" name="OrderedParts[@item.ID].PurchaseOrderDetailID" value="@item.PurchaseOrderDetailID" />
+                                <input type="hidden" name="OrderedParts[@item.ID].PartID" value="@item.ID" />
+                                <input type="number" name="OrderedParts[@item.ID].QtyToOrder" value="@qtyToOrder" />
+                            </td>
+                            <td>
+                                <input type="hidden" name="OrderDetailList[@item.ID].PurchasePrice" value="@item.PurchasePrice" />
+                                <input type="number" name="OrderedParts[@item.ID].PurchasePrice" step="0.01" value="@Math.Round(price, 2)" />
+                            </td>
+                            <td>
+                                <button type="submit"
+                                        name="SelectedPartID"
+                                        value="@item.ID"
+                                        style="background-color:var(--icon-color)"
+                                        asp-page-handler="RefreshItem">
+                                    <img src="https://img.icons8.com/material-outlined/24/000000/update-left-rotation.png" />
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @if (!Model.OrderDetailList.Any())
+            {
+                <p class="empty-order-text">No parts selected</p>
+            }
+
+        </div>
+        <div class="vendor-list">
+            <h2>Vendor Inventory</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <td>ID</td>
+                        <td>Description</td>
+                        <td>Qty On Hand</td>
+                        <td>Reorder Level</td>
+                        <td>Qty On Order</td>
+                        <td>Buffer</td>
+                        <td>Price ($)</td>
+                        <td>Add</td>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.VendorInventory)
+                    {
+                        <tr>
+                            <td>
+                                <input type="hidden" name="VendorInventory[@item.ID].ID" value="@item.ID" />
+                                @item.ID
+                            </td>
+                            <td>
+                                <input type="hidden" name="VendorInventory[@item.ID].Description" value="@item.Description" />
+                                @item.Description
+                            </td>
+                            <td class="purchase-td-align-end">
+                                <input type="hidden" name="VendorInventory[@item.ID].QtyOnHand" value="@item.QtyOnHand" />
+                                @item.QtyOnHand
+                            </td>
+                            <td class="purchase-td-align-end">
+                                <input type="hidden" name="VendorInventory[@item.ID].ReorderLevel" value="@item.ReorderLevel" />
+                                @item.ReorderLevel
+                            </td>
+                            <td class="purchase-td-align-end">
+                                <input type="hidden" name="VendorInventory[@item.ID].QtyOnOrder" value="@item.QtyOnOrder" />
+                                @item.QtyOnOrder
+                            </td>
+                            <td class="purchase-td-align-end">@(@item.ReorderLevel - @item.QtyOnHand - @item.QtyOnOrder)</td>
+                            <td class="purchase-td-align-end">
+                                <input type="hidden" name="VendorInventory[@item.ID].PurchasePrice" value="@item.PurchasePrice" />
+                                @Math.Round(item.PurchasePrice, 2)
+                            </td>
+                            <td>
+                                <input type="hidden" name="VendorInventory.Index" value="@item.ID" />
+                                <button type="submit" 
+                                        name="SelectedPartID" 
+                                        value="@item.ID" 
+                                        style="background-color:var(--icon-color)"
+                                        asp-page-handler="AddItem">
+                                    <img src="https://img.icons8.com/material-outlined/24/000000/add.png" />
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @if(!Model.VendorInventory.Any())
+                {
+                    <p class="empty-order-text">No more parts in vendor inventory avaiable to select</p>
+                }
+        </div>
+    </form>
+}

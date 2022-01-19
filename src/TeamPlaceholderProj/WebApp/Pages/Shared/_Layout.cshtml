@@ -1,0 +1,43 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Placehold</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/holiday.css@0.9.8" />
+    @RenderSection("CustomCSS", required: false)
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a asp-area="" asp-page="/Index">Bikes R Us</a></li>
+                <li><a asp-area="" asp-page="/Index">Home</a></li>
+                <li><a asp-area="" asp-page="/Privacy">Privacy</a></li>
+                <li>
+                    Admin
+                    <ul>
+                        <li><a asp-area="" asp-page="/Purchasing/Purchasing">Purchasing</a></li>
+                        <li><a asp-area="" asp-page="/Receiving/Receiving" asp-route-PurchaseOrderId="">Receiving</a></li>
+                        <li><a asp-area="" asp-page="/SalesReturns/SalesReturns">Sales Returns</a></li>
+                    </ul>
+                </li>
+                <partial name="_LoginPartial" />
+            </ul>
+        </nav>
+    </header>
+    <main role="main">
+        @RenderBody()
+    </main>
+
+
+    <footer>
+        <div>
+            &copy; 2021 - WebApp - <a asp-area="" asp-page="/Privacy">Privacy</a>
+        </div>
+    </footer>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

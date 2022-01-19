@@ -1,0 +1,132 @@
+﻿@page "{PurchaseOrderId?}"
+@model WebApp.Pages.Receiving.ReceivingModel
+@{
+}
+<h1>Receiving</h1>
+
+@if (!string.IsNullOrEmpty(Model.FeedbackMessage))
+{
+    <blockquote class="success">@Model.FeedbackMessage</blockquote>
+}
+
+@if (!string.IsNullOrEmpty(Model.WarningMessage))
+{
+    <blockquote class="error">
+        @Model.WarningMessage
+        <ul>
+            @foreach(var detail in Model.WarningDetails)
+            {
+                <li>@detail</li>
+            }
+        </ul>
+    </blockquote>
+}
+
+<h2>Outstanding Orders</h2>
+
+<table>
+    <tr>
+        <th>PO #</th>
+        <th>Date</th>
+        <th>Vendor</th>
+        <th>Contact</th>
+        <th></th>
+    </tr>
+    @foreach(var order in Model.OutstandingOrders)
+        {
+            <tr>
+                <td>@order.PoNumber</td>
+                <td>@order.Date</td>
+                <td>@order.Vendor</td>
+                <td>@order.Phone</td>
+                <td><a asp-area="" asp-page="/Receiving/Receiving" asp-route-PurchaseOrderId="@order.Id">View Order</a></td>
+            </tr>
+        }
+</table>
+
+<input type="hidden" asp-for="EmployeeId" />
+@if(Model.SelectedOrder != null)
+{
+    <p>User: @Model.EmployeeName</p>
+    <p>PO # @Model.SelectedOrder.PurchaseOrderNumber</p>
+    <p>Vendor: @Model.SelectedOrder.Vendor</p>
+    <p>Contact Phone: @Model.SelectedOrder.Phone</p>
+    <form method="POST">
+        
+        <h2>Selected PO Details</h2>
+        <table>
+            <tr>
+                <th>Part ID</th>
+                <th>Description</th>
+                <th>O/Qty</th>
+                <th>O.Std</th>
+                <th>RecQty</th>
+                <th>Return</th>
+                <th>Reason</th>
+            </tr>
+            @foreach(var item in Model.SelectedOrder.ReceivingItems)
+            {
+                <tr>
+                    <td>
+                        @item.PartId
+                        <input type="hidden" name="CurrentReceivings.index" value=@item.PurchaseOrderDetailId />
+                        <input type="hidden" name="CurrentReceivings[@item.PurchaseOrderDetailId].PurchaseOrderDetailId" value=@item.PurchaseOrderDetailId />
+                    </td>
+
+                    <td>@item.PartName</td>
+                    <td>@item.OrdQty</td>
+                    <td>@(item.OrdQty - item.RecQty)</td>
+                    <td><input type="number" name="CurrentReceivings[@item.PurchaseOrderDetailId].RecQty" min="0" step="1" value="0" /></td>
+                    <td><input type="number" name="CurrentReceivings[@item.PurchaseOrderDetailId].Return" min="0" step="1" value="0" /></td>
+                    <td><input type="text" name="CurrentReceivings[@item.PurchaseOrderDetailId].Reason" /></td>
+                </tr>
+            }
+        </table>
+        <button type="submit" asp-page-handler="Receive">Receive</button>
+        <button type="submit" asp-page-handler="Close">Force Close</button>
+        <label>
+            <input type="text" name="CloseReason" placeholder="--- reason for closing ---"/>
+        </label>
+        <h2>Unordered Items</h2>
+        <table>
+            <tr>
+                <th></th>
+                <th>Item Description</th>
+                <th>Vendor Part ID</th>
+                <th>Qty</th>
+            </tr>
+            @foreach(var item in Model.UnOrderedItems)
+            {
+                <tr>
+                    <td>
+                        <button type="submit" name="ItemToRemove" value="@item.VendorPartId" asp-page-handler="RemoveItem">Remove</button>
+                        <input type="hidden" name="UnOrderedItems.Index" value="@item.VendorPartId" />
+                    </td>
+                    <td>
+                        @item.Description
+                        <input type="hidden" name="UnOrderedItems[@item.VendorPartId].Description" value="@item.Description" />
+                    </td>
+                    <td>
+                        @item.VendorPartId
+                        <input type="hidden" name="UnOrderedItems[@item.VendorPartId].VendorPartId" value="@item.VendorPartId" />
+                    </td>
+                    <td>
+                        @item.Qty
+                        <input type="hidden" name="UnOrderedItems[@item.VendorPartId].Qty" value="@item.Qty" />
+                    </td>
+                </tr>
+            }
+            <tr>
+                <td>
+                    <button type="submit" asp-page-handler="AddItem">Insert</button>
+                    <button type="submit" asp-page-handler="ClearItem">Clear</button>
+                </td>
+                <td><input type="text" name="NewlyInsertItem.Description" /></td>
+                <td><input type="text" name="NewlyInsertItem.VendorPartId" /></td>
+                <td><input type="number" name="NewlyInsertItem.Qty" value="0" min="0" step="1" /></td>
+            </tr>
+        </table>
+    </form>
+
+}
+

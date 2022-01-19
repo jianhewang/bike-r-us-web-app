@@ -1,0 +1,125 @@
+﻿{
+   "CodeGenerationMode": 0,
+   "ContextClassName": "Ebike_DMIT2018Context",
+   "ContextNamespace": null,
+   "DefaultDacpacSchema": null,
+   "FilterSchemas": false,
+   "IncludeConnectionString": false,
+   "ModelNamespace": null,
+   "OutputContextPath": "dal",
+   "OutputPath": "Entities",
+   "ProjectRootNamespace": "Backend_Receiving",
+   "Schemas": null,
+   "SelectedHandlebarsLanguage": 0,
+   "SelectedToBeGenerated": 0,
+   "Tables": [
+      {
+         "Name": "[dbo].[Categories]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Coupons]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Customers]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[CustomerVehicles]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[DatabaseVersion]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Employees]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[JobDetailParts]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[JobDetails]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Jobs]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Parts]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Positions]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[PurchaseOrderDetails]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[PurchaseOrders]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ReceiveOrderDetails]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ReceiveOrders]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[ReturnedOrderDetails]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[SaleDetails]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[SaleRefundDetails]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[SaleRefunds]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Sales]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[StandardJobs]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[UnorderedPurchaseItemCart]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[Vendors]",
+         "ObjectType": 0
+      }
+   ],
+   "UiHint": "HUGEASNEVER.eBike_DMIT2018",
+   "UseBoolPropertiesWithoutDefaultSql": false,
+   "UseDatabaseNames": false,
+   "UseDbContextSplitting": false,
+   "UseFluentApiOnly": false,
+   "UseHandleBars": false,
+   "UseInflector": true,
+   "UseLegacyPluralizer": false,
+   "UseNoConstructor": false,
+   "UseNoDefaultConstructor": false,
+   "UseNoNavigations": false,
+   "UseNoObjectFilter": false,
+   "UseNodaTime": false,
+   "UseNullableReferences": false,
+   "UseSchemaFolders": false,
+   "UseSpatial": false
+}
