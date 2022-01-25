@@ -15,6 +15,19 @@ Working as a group, two other awesome developers and I delivered this applicatio
 Here, I will only shows the requirement and design document on my part, Purchasing.
 - [**Purchase**](./docs/ReadMe.md) - Requirement and design details.
 
+&nbsp;
+### Page Screenshots
+Purchase Order Details Table
+
+![](./docs/img/orderdetails.png)
+
+&nbsp;
+
+Vendor Inventory Table
+
+![](./docs/img/vendorinventories.png)
+
+Two tables can work interactively to add/remove item records. 
 
 &nbsp;
 ## Team Placeholder
